@@ -35,3 +35,10 @@ Process:
 
     4. After that i created the setup to determine who wins ties which was checking which bidder
        has the earliest index in the list.
+       
+    5. I then created tests for the provided scenarios and an example Controller and Response file 
+       that would be sent to whatever we used to display the results.
+       
+Unit Tests:
+
+There is a test file that can be run to test the provided scenarios (AuctionServiceTest.java)

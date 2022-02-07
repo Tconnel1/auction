@@ -32,19 +32,18 @@ public class AuctionService {
         // iterates through each bid to and collects the highest amount for each one to determine the rounds highest bidder.
         for(Bid bid : bids) {
             // gets this rounds bid from the bidder
-            Bid currentBid = getBid(bid.getBidder(), highestBid);
-            if(currentBid == null) {
-                continue;
-            }
-            // if the current bid is higher than the highest bid. set new highest and mark validBids
-            if (currentBid.getAmount() > highestBid.getAmount()) {
-                highestBid = currentBid;
-                validBids = true;
-            }
-            // check to select winner in case of a tie. selects the earliest bidder.
-            if (currentBid.getAmount() == highestBid.getAmount() && highestBid.getBidder() != null) {
-                if (bids.indexOf(currentBid.getBidder()) < bids.indexOf(highestBid.getBidder()))
+            Bid currentBid = getRoundsHighestBid(bid.getBidder(), highestBid);
+            if(currentBid != null) {
+                // if the current bid is higher than the highest bid. set new highest and mark validBids
+                if (currentBid.getAmount() > highestBid.getAmount()) {
                     highestBid = currentBid;
+                    validBids = true;
+                }
+                // check to select winner in case of a tie. selects the earliest bidder.
+                if (currentBid.getAmount() == highestBid.getAmount() && highestBid.getBidder() != null) {
+                    if (bids.indexOf(currentBid.getBidder()) < bids.indexOf(highestBid.getBidder()))
+                        highestBid = currentBid;
+                }
             }
         }
         // checks if there were still valid bids for the next round of the auction
@@ -66,7 +65,7 @@ public class AuctionService {
      * @param lastBid The last bid given.
      * @return The competitors newest bid on the item
      */
-    public Bid getBid(final Bidder bidder, final Bid lastBid) {
+    private Bid getRoundsHighestBid(final Bidder bidder, final Bid lastBid) {
         Bid nextBid = null;
         int currentBid = bidder.getStartingBid();
 
@@ -82,24 +81,35 @@ public class AuctionService {
             log.info("{} has kicked off the auction with a bid for {}", bidder.getName(), bidder.getStartingBid());
             nextBid = new Bid(bidder, bidder.getStartingBid());
         } else if (bidder.getMaxBid() >= lastBid.getAmount()) {
-            // increases the amount from starting to desired by the stated increment and makes the bid.
-            while (currentBid <= lastBid.getAmount()) {
-                // checks if amount can increase by full increment. if not - do not go to max bet.
-                int maxBidCheck = currentBid + bidder.getIncrementAmount();
-                if (maxBidCheck <= bidder.getMaxBid()) {
-                    currentBid += bidder.getIncrementAmount();
-                } else {
-
-                    break;
-                }
-            }
-            if(currentBid > lastBid.getAmount()) {
-                log.info("A new bid has been made by {}, for {}", bidder.getName(), currentBid);
-            } else {
-                log.info("{} could not beat the last bid", bidder.getName());
-            }
+            currentBid = getHigherBid(bidder, lastBid, currentBid);
             nextBid = new Bid(bidder, currentBid);
         }
         return nextBid;
+    }
+
+    /**
+     *
+     * @param bidder The bidder attempting to beat the current bid
+     * @param winningBid the amount on the bid currently winning the auction
+     * @param competitorsBid the bidders bid that will attempt to beat the currently winning bid
+     * @return
+     */
+    private int getHigherBid(Bidder bidder, Bid winningBid, int competitorsBid) {
+        // increases the amount from starting by the bidders increment until it outbids the current bid or maxes out.
+        while (competitorsBid <= winningBid.getAmount()) {
+            // checks if amount can increase by full increment. if not - do not go to max bet.
+            int maxBidCheck = competitorsBid + bidder.getIncrementAmount();
+            if (maxBidCheck <= bidder.getMaxBid()) {
+                competitorsBid += bidder.getIncrementAmount();
+            } else {
+                break;
+            }
+        }
+        if(competitorsBid > winningBid.getAmount()) {
+            log.info("A new bid has been made by {}, for {}", bidder.getName(), competitorsBid);
+        } else {
+            log.info("{} could not beat the last bid", bidder.getName());
+        }
+        return competitorsBid;
     }
 }
